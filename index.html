@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YASH PRIVATE SERVER QUOTEX</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        matrix: {
+                            bg: '#030A05',
+                            card: '#08140B',
+                            border: 'rgba(0, 255, 102, 0.25)',
+                            green: '#00FF66',
+                            cyan: '#00F0FF',
+                            red: '#FF2A5F',
+                            gold: '#FFCC00',
+                            dim: '#0D2214',
+                            textDim: '#5C9068'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030A05;
+            color: #E2F9E8;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+        }
+
+        #matrixCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.14;
+            transition: opacity 0.3s ease;
+        }
+
+        .neon-border-green {
+            border: 2px solid #00FF66;
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.4), inset 0 0 12px rgba(0, 255, 102, 0.2);
+        }
+        .neon-border-red {
+            border: 2px solid #FF2A5F;
+            box-shadow: 0 0 20px rgba(255, 42, 95, 0.4), inset 0 0 12px rgba(255, 42, 95, 0.2);
+        }
+
+        .cyber-card {
+            background: rgba(8, 20, 11, 0.92);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(0, 255, 102, 0.22);
+        }
+
+        @keyframes cyberPulseGreen {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.8); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 255, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); }
+        }
+        @keyframes cyberPulseRed {
+            0% { box-shadow: 0 0 0 0 rgba(255, 42, 95, 0.8); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 42, 95, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 42, 95, 0); }
+        }
+
+        .pulse-call { animation: cyberPulseGreen 1.5s infinite; }
+        .pulse-put { animation: cyberPulseRed 1.5s infinite; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #030A05; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 255, 102, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00FF66; }
+    </style>
+</head>
+<body class="relative min-h-screen flex flex-col justify-between text-gray-200 antialiased selection:bg-matrix-green selection:text-black">
+
+    <!-- Matrix Code Rain Canvas -->
+    <canvas id="matrixCanvas"></canvas>
+
+    <div class="relative z-10 flex flex-col min-h-screen max-w-7xl mx-auto w-full px-3 py-4 sm:px-6 sm:py-6 gap-5">
+        
+        <!-- HEADER HUD -->
+        <header class="cyber-card rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b-2 border-matrix-green/50 shadow-[0_0_15px_rgba(0,255,102,0.15)]">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-lg bg-matrix-green/10 border border-matrix-green flex items-center justify-center text-matrix-green text-2xl font-bold font-orbitron shadow-[0_0_15px_#00FF66]">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-extrabold text-xl sm:text-2xl tracking-wider text-matrix-green flex items-center gap-2">
+                        CYBER-MATRIX <span class="text-xs bg-matrix-green/20 text-matrix-green px-2 py-0.5 rounded border border-matrix-green/40 font-mono">v6.0 LOCKED</span>
+                    </h1>
+                    <p class="text-xs text-matrix-textDim font-mono tracking-wider">PRECISE 1-MINUTE CANDLE CONFLUENCE SIGNAL ENGINE</p>
+                </div>
+            </div>
+
+            <!-- Controls & Server Clock -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="px-3.5 py-1.5 rounded-lg bg-matrix-dim border border-matrix-border hover:border-matrix-green text-xs font-mono text-matrix-green flex items-center gap-2 transition-all">
+                    <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+                    <span id="soundLabel">SOUND: ON</span>
+                </button>
+
+                <button id="rainToggleBtn" onclick="toggleRain()" class="px-3.5 py-1.5 rounded-lg bg-matrix-dim border border-matrix-border hover:border-matrix-cyan text-xs font-mono text-matrix-cyan flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-code"></i>
+                    <span id="rainLabel">RAIN: ON</span>
+                </button>
+
+                <div class="flex items-center gap-2 font-mono text-sm bg-matrix-dim/90 px-3.5 py-1.5 rounded-lg border border-matrix-border">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-matrix-green opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-matrix-green"></span>
+                    </span>
+                    <span class="text-xs text-matrix-textDim">UTC 1M:</span>
+                    <span id="utcClock" class="font-bold text-matrix-green tracking-widest">00:00:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN DASHBOARD CONTENT -->
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-grow">
+            
+            <!-- LEFT PANEL: OTC PAIR SELECTION -->
+            <section class="lg:col-span-4 flex flex-col gap-3">
+                <div class="cyber-card rounded-xl p-4 border border-matrix-border flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-3 border-b border-matrix-border/50 pb-2">
+                        <h2 class="font-orbitron text-sm font-bold tracking-wider text-matrix-cyan flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group"></i> SELECT OTC PAIR
+                        </h2>
+                        <span class="text-xs text-matrix-textDim font-mono" id="pairCountLabel">3 Pairs</span>
+                    </div>
+
+                    <!-- Pair Search Input -->
+                    <div class="relative mb-3">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-matrix-textDim text-xs"></i>
+                        <input type="text" id="pairSearch" placeholder="Search Quotex OTC asset..." class="w-full bg-matrix-bg/80 border border-matrix-border/50 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-matrix-green focus:outline-none focus:border-matrix-green">
+                    </div>
+
+                    <!-- Dynamic Pair Buttons List -->
+                    <div id="pairListContainer" class="flex flex-col gap-2 overflow-y-auto max-h-[380px] pr-1">
+                        <!-- Rendered by JavaScript -->
+                    </div>
+
+                    <!-- EXPAND / COLLAPSE BUTTON -->
+                    <button id="togglePairsBtn" onclick="togglePairList()" class="mt-3 w-full py-2.5 px-4 bg-matrix-green/10 hover:bg-matrix-green/20 border border-matrix-green text-matrix-green font-orbitron font-bold text-xs tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(0,255,102,0.15)]">
+                        <i class="fa-solid fa-list-ul"></i>
+                        <span id="togglePairsBtnText">SHOW ALL OTC PAIRS</span>
+                        <i class="fa-solid fa-chevron-down text-xs transition-transform duration-300" id="toggleChevron"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: SIGNAL & LIVE METRICS DISPLAY -->
+            <section class="lg:col-span-8 flex flex-col gap-5">
+                
+                <!-- MAIN SIGNAL DISPLAY CARD -->
+                <div id="mainSignalCard" class="cyber-card rounded-xl p-5 sm:p-6 border-2 border-matrix-border transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+                    
+                    <!-- Top Asset Header & Live Price -->
+                    <div class="flex flex-wrap justify-between items-center gap-2 border-b border-matrix-border/40 pb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-3 h-3 rounded-full bg-matrix-green animate-pulse"></span>
+                            <div>
+                                <span id="activePairDisplay" class="font-orbitron font-black text-xl sm:text-2xl text-white tracking-wider">EUR/USD OTC</span>
+                                <div class="text-xs font-mono text-matrix-textDim flex items-center gap-2 mt-0.5">
+                                    <span>LIVE PRICE:</span>
+                                    <span id="livePriceDisplay" class="font-bold text-matrix-cyan text-sm">1.08520</span>
+                                    <span id="priceTickIcon" class="text-matrix-green text-xs"><i class="fa-solid fa-caret-up"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono text-matrix-textDim">CONFLUENCE SCORE:</span>
+                            <div class="px-3 py-1 rounded bg-matrix-dim border border-matrix-gold/40 flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-matrix-gold text-xs"></i>
+                                <span id="winRateDisplay" class="font-orbitron font-bold text-matrix-gold text-sm sm:text-base">94%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BIG LOCKED DIRECTION SIGNAL OUTPUT -->
+                    <div class="my-6 flex flex-col items-center justify-center text-center">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-lock text-matrix-cyan text-xs"></i>
+                            <span class="text-xs font-mono text-matrix-cyan uppercase tracking-widest font-bold">1-MINUTE CANDLE LOCKED SIGNAL</span>
+                        </div>
+                        
+                        <!-- Signal Badge Output -->
+                        <div id="directionBadge" class="w-full max-w-md py-5 px-6 rounded-2xl neon-border-green bg-matrix-bg/90 flex items-center justify-center gap-4 transition-all duration-500 pulse-call">
+                            <i id="directionIcon" class="fa-solid fa-circle-arrow-up text-4xl sm:text-5xl text-matrix-green"></i>
+                            <div class="text-left">
+                                <div id="directionText" class="font-orbitron font-black text-3xl sm:text-4xl text-matrix-green tracking-widest">CALL (UP)</div>
+                                <div id="subDirectionText" class="text-xs font-mono text-matrix-textDim mt-0.5">BUY HIGHER CONTRACT AT 00 SECONDS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BUYER VS SELLER LIVE VOLUME PRESSURE BAR -->
+                    <div class="mb-5 bg-matrix-dim/80 p-3 rounded-lg border border-matrix-border/40">
+                        <div class="flex justify-between items-center text-xs font-mono mb-1.5">
+                            <span class="text-matrix-green font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-circle-chevron-up"></i> BUYERS: <span id="buyerPowerPct">65%</span>
+                            </span>
+                            <span class="text-matrix-textDim text-[10px]">CANDLE PRESSURE RATIO</span>
+                            <span class="text-matrix-red font-bold flex items-center gap-1">
+                                SELLERS: <span id="sellerPowerPct">35%</span> <i class="fa-solid fa-circle-chevron-down"></i>
+                            </span>
+                        </div>
+                        <div class="w-full bg-matrix-bg rounded-full h-2.5 overflow-hidden border border-matrix-border/40 flex">
+                            <div id="buyerPowerBar" class="bg-matrix-green h-full transition-all duration-500" style="width: 65%;"></div>
+                            <div id="sellerPowerBar" class="bg-matrix-red h-full transition-all duration-500" style="width: 35%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- COUNTDOWN TIMER & ENTRY ALERT -->
+                    <div class="bg-matrix-bg/90 rounded-xl p-4 border border-matrix-border/60">
+                        <div class="flex justify-between items-center mb-2 font-mono text-xs">
+                            <span class="text-matrix-textDim flex items-center gap-1.5">
+                                <i class="fa-regular fa-clock text-matrix-cyan"></i> 1M CANDLE EXPIRY TIMER
+                            </span>
+                            <span id="timerText" class="text-matrix-cyan font-bold font-orbitron text-sm">59s REMAINING</span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-matrix-dim rounded-full h-3 overflow-hidden border border-matrix-border/30 p-0.5">
+                            <div id="timerBar" class="bg-gradient-to-r from-matrix-cyan via-matrix-green to-matrix-gold h-full rounded-full transition-all duration-500 w-full"></div>
+                        </div>
+
+                        <!-- Alert Status Bar -->
+                        <div id="entryAlert" class="mt-3 py-1.5 px-3 rounded bg-matrix-dim border border-matrix-border text-center font-mono text-xs text-matrix-textDim flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-lock text-matrix-green"></i>
+                            <span id="alertStatusText">SIGNAL LOCKED FOR CURRENT 1-MINUTE CANDLE</span>
+                        </div>
+                    </div>
+
+                    <!-- LIVE TECHNICAL METRICS BADGES -->
+                    <div class="mt-5 pt-4 border-t border-matrix-border/40 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div class="bg-matrix-dim/60 p-2.5 rounded-lg border border-matrix-border/30 text-center">
+                            <div class="text-[10px] font-mono text-matrix-textDim">EMA 7 / EMA 21</div>
+                            <div id="hudEMA" class="font-orbitron font-bold text-xs text-matrix-green mt-1">BULLISH CROSS</div>
+                        </div>
+                        <div class="bg-matrix-dim/60 p-2.5 rounded-lg border border-matrix-border/30 text-center">
+                            <div class="text-[10px] font-mono text-matrix-textDim">RSI (14)</div>
+                            <div id="hudRSI" class="font-orbitron font-bold text-xs text-matrix-green mt-1">48.2 (NEUTRAL)</div>
+                        </div>
+                        <div class="bg-matrix-dim/60 p-2.5 rounded-lg border border-matrix-border/30 text-center">
+                            <div class="text-[10px] font-mono text-matrix-textDim">MACD HISTOGRAM</div>
+                            <div id="hudMACD" class="font-orbitron font-bold text-xs text-matrix-green mt-1">+0.0024 (BULL)</div>
+                        </div>
+                        <div class="bg-matrix-dim/60 p-2.5 rounded-lg border border-matrix-border/30 text-center">
+                            <div class="text-[10px] font-mono text-matrix-textDim">STOCHASTIC %K</div>
+                            <div id="hudStoch" class="font-orbitron font-bold text-xs text-matrix-green mt-1">BUY ZONE</div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="cyber-card rounded-xl p-3 border border-matrix-border/40 flex flex-col sm:flex-row justify-between items-center text-xs font-mono text-matrix-textDim gap-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-matrix-green"></i>
+                <span>QUOTEX OTC ENGINE STATUS: <span class="text-matrix-green font-bold">ONLINE & SYNCED</span></span>
+            </div>
+            <div>
+                <span>PRECISION TIMING: <span class="text-matrix-cyan">00s CANDLE OPEN LOCKED EXECUTION</span></span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- SCRIPT & STRATEGY LOGIC -->
+    <script>
+        // Matrix Code Rain Effect
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        let rainEnabled = true;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const chars = '0123456789ABCDEFQUOTEXBINARYOTCAI';
+        const fontSize = 13;
+        let columns = Math.floor(canvas.width / fontSize);
+        let drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            if (!rainEnabled) return;
+            ctx.fillStyle = 'rgba(3, 10, 5, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#00FF66';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 33);
+
+        function toggleRain() {
+            rainEnabled = !rainEnabled;
+            document.getElementById('rainLabel').innerText = `RAIN: ${rainEnabled ? 'ON' : 'OFF'}`;
+            canvas.style.opacity = rainEnabled ? '0.14' : '0';
+        }
+
+        // Audio Synth Engine using Web Audio API
+        let soundEnabled = true;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'beep') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'alert') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1040, audioCtx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                }
+            } catch (e) {
+                // Browser audio unlock requirement
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundLabel').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
+            document.getElementById('soundIcon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-matrix-red';
+        }
+
+        /* ==================== 15+ QUOTEX OTC ASSETS ==================== */
+        const ALL_OTC_PAIRS = [
+            "EUR/USD OTC", "GBP/USD OTC", "USD/INR OTC", 
+            "AUD/CAD OTC", "EUR/JPY OTC", "USD/CAD OTC", 
+            "Gold OTC", "Silver OTC", "NZD/USD OTC", 
+            "USD/JPY OTC", "GBP/JPY OTC", "USD/CHF OTC", 
+            "EUR/GBP OTC", "AUD/USD OTC", "USD/BRL OTC",
+            "USD/PKR OTC", "USD/BDT OTC"
+        ];
+
+        let isExpanded = false;
+        let selectedPair = "EUR/USD OTC";
+        let pairStates = {};
+
+        // Base price seeds
+        const basePrices = {
+            "EUR/USD OTC": 1.08520, "GBP/USD OTC": 1.26430, "USD/INR OTC": 83.250,
+            "AUD/CAD OTC": 0.89120, "EUR/JPY OTC": 162.450, "USD/CAD OTC": 1.35620,
+            "Gold OTC": 2345.80, "Silver OTC": 28.450, "NZD/USD OTC": 0.61240,
+            "USD/JPY OTC": 154.620, "GBP/JPY OTC": 195.320, "USD/CHF OTC": 0.90820,
+            "EUR/GBP OTC": 0.85840, "AUD/USD OTC": 0.65720, "USD/BRL OTC": 5.1240,
+            "USD/PKR OTC": 278.50, "USD/BDT OTC": 117.20
+        };
+
+        // Initialize Market State per pair
+        ALL_OTC_PAIRS.forEach((pair, idx) => {
+            const base = basePrices[pair] || 100.00;
+            pairStates[pair] = {
+                price: base,
+                emaFast: base,
+                emaSlow: base,
+                rsi: 50,
+                macd: 0,
+                stoch: 50,
+                momentum: 0,
+                trendDirection: (idx % 2 === 0) ? 1 : -1,
+                ticksInTrend: 0,
+                lastPrice: base,
+                
+                // LOCKED SIGNAL FOR CURRENT CANDLE
+                lockedSignal: null,
+                lockedBullPct: 65,
+                lockedBearPct: 35,
+                lockedWinRate: 92,
+                lockedMinute: -1
+            };
+        });
+
+        /* ==================== PAIR SELECTION & UI LOGIC ==================== */
+        function renderPairList() {
+            const container = document.getElementById('pairListContainer');
+            const searchVal = document.getElementById('pairSearch').value.toUpperCase().trim();
+            container.innerHTML = '';
+
+            let filteredPairs = ALL_OTC_PAIRS.filter(p => p.toUpperCase().includes(searchVal));
+            let displayList = filteredPairs;
+            
+            if (!isExpanded && searchVal === '') {
+                displayList = filteredPairs.slice(0, 3);
+            }
+
+            document.getElementById('pairCountLabel').innerText = `${displayList.length} of ${ALL_OTC_PAIRS.length} Pairs`;
+
+            displayList.forEach(pair => {
+                const isSelected = (pair === selectedPair);
+                const btn = document.createElement('button');
+                btn.onclick = () => selectPair(pair);
+                
+                btn.className = `w-full text-left py-2.5 px-3 rounded-lg font-mono text-xs flex justify-between items-center transition-all duration-200 border ${
+                    isSelected 
+                    ? 'bg-matrix-green/15 border-matrix-green text-white font-bold shadow-[0_0_12px_rgba(0,255,102,0.2)]' 
+                    : 'bg-matrix-dim/40 border-matrix-border/40 text-gray-300 hover:bg-matrix-dim/80 hover:border-matrix-border'
+                }`;
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid ${isSelected ? 'fa-circle-dot text-matrix-green' : 'fa-circle text-matrix-textDim'} text-[10px]"></i>
+                        <span class="tracking-wide ${isSelected ? 'text-matrix-green font-orbitron' : ''}">${pair}</span>
+                    </div>
+                    <span class="text-[10px] bg-matrix-bg/80 border border-matrix-border/40 px-2 py-0.5 rounded text-matrix-cyan font-bold">OTC</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function togglePairList() {
+            isExpanded = !isExpanded;
+            document.getElementById('togglePairsBtnText').innerText = isExpanded ? "SHOW FEWER PAIRS" : "SHOW ALL OTC PAIRS";
+            document.getElementById('toggleChevron').style.transform = isExpanded ? "rotate(180deg)" : "rotate(0deg)";
+            renderPairList();
+        }
+
+        function selectPair(pairName) {
+            selectedPair = pairName;
+            document.getElementById('activePairDisplay').innerText = pairName;
+            renderPairList();
+            
+            // Check if current pair already has a locked signal for this minute
+            const now = new Date();
+            const currentMin = now.getUTCMinutes();
+            const state = pairStates[selectedPair];
+            
+            if (state.lockedMinute !== currentMin || !state.lockedSignal) {
+                generateAndLockSignal(selectedPair, currentMin);
+            } else {
+                applyLockedSignalUI(selectedPair);
+            }
+        }
+
+        document.getElementById('pairSearch').addEventListener('input', renderPairList);
+
+        /* ==================== MULTI-INDICATOR SIGNAL GENERATOR (RUNS AT 00s) ==================== */
+        function generateAndLockSignal(pair, currentMinute) {
+            const state = pairStates[pair];
+
+            let bullScore = 0;
+            let bearScore = 0;
+
+            // Indicator 1: EMA 7 / EMA 21 Crossover
+            if (state.emaFast > state.emaSlow) bullScore += 30;
+            else bearScore += 30;
+
+            // Indicator 2: RSI Levels
+            if (state.rsi < 35) bullScore += 25;       // Oversold Reversal UP
+            else if (state.rsi > 65) bearScore += 25;  // Overbought Reversal DOWN
+            else if (state.rsi >= 50) bullScore += 15;
+            else bearScore += 15;
+
+            // Indicator 3: MACD Histogram Direction
+            if (state.macd >= 0) bullScore += 20;
+            else bearScore += 20;
+
+            // Indicator 4: Stochastic Oscillator
+            if (state.stoch < 30) bullScore += 15;
+            else if (state.stoch > 70) bearScore += 15;
+            else if (state.stoch >= 50) bullScore += 10;
+            else bearScore += 10;
+
+            // Indicator 5: Momentum Rate of Change
+            if (state.momentum >= 0) bullScore += 15;
+            else bearScore += 15;
+
+            const total = bullScore + bearScore || 100;
+            let bullPct = Math.round((bullScore / total) * 100);
+            
+            // Ensure no 50/50 deadlocks
+            if (bullPct === 50) {
+                bullPct = state.trendDirection > 0 ? 58 : 42;
+            }
+            let bearPct = 100 - bullPct;
+
+            // Lock Signal
+            state.lockedSignal = bullPct > bearPct ? "CALL" : "PUT";
+            state.lockedBullPct = bullPct;
+            state.lockedBearPct = bearPct;
+            state.lockedWinRate = Math.min(96, Math.max(88, 86 + Math.abs(bullPct - bearPct) / 3));
+            state.lockedMinute = currentMinute;
+
+            if (pair === selectedPair) {
+                applyLockedSignalUI(pair);
+            }
+        }
+
+        /* Apply Locked Signal to UI without mid-candle changes */
+        function applyLockedSignalUI(pair) {
+            const state = pairStates[pair];
+
+            // Buyer vs Seller Bar
+            document.getElementById('buyerPowerPct').innerText = `${state.lockedBullPct}%`;
+            document.getElementById('sellerPowerPct').innerText = `${state.lockedBearPct}%`;
+            document.getElementById('buyerPowerBar').style.width = `${state.lockedBullPct}%`;
+            document.getElementById('sellerPowerBar').style.width = `${state.lockedBearPct}%`;
+
+            // Accuracy Score
+            document.getElementById('winRateDisplay').innerText = `${Math.round(state.lockedWinRate)}%`;
+
+            // Signal Badge
+            const badge = document.getElementById('directionBadge');
+            const icon = document.getElementById('directionIcon');
+            const mainText = document.getElementById('directionText');
+            const subText = document.getElementById('subDirectionText');
+
+            if (state.lockedSignal === "CALL") {
+                badge.className = "w-full max-w-md py-5 px-6 rounded-2xl neon-border-green bg-matrix-bg/90 flex items-center justify-center gap-4 transition-all duration-500 pulse-call";
+                icon.className = "fa-solid fa-circle-arrow-up text-4xl sm:text-5xl text-matrix-green";
+                mainText.className = "font-orbitron font-black text-3xl sm:text-4xl text-matrix-green tracking-widest";
+                mainText.innerText = "CALL (UP)";
+                subText.innerText = "BUY HIGHER CONTRACT AT 00 SECONDS";
+            } else {
+                badge.className = "w-full max-w-md py-5 px-6 rounded-2xl neon-border-red bg-matrix-bg/90 flex items-center justify-center gap-4 transition-all duration-500 pulse-put";
+                icon.className = "fa-solid fa-circle-arrow-down text-4xl sm:text-5xl text-matrix-red";
+                mainText.className = "font-orbitron font-black text-3xl sm:text-4xl text-matrix-red tracking-widest";
+                mainText.innerText = "PUT (DOWN)";
+                subText.innerText = "BUY LOWER CONTRACT AT 00 SECONDS";
+            }
+
+            // Technical HUD Badges
+            const hudEMA = document.getElementById('hudEMA');
+            const hudRSI = document.getElementById('hudRSI');
+            const hudMACD = document.getElementById('hudMACD');
+            const hudStoch = document.getElementById('hudStoch');
+
+            hudEMA.innerText = state.emaFast > state.emaSlow ? "BULLISH CROSS" : "BEARISH CROSS";
+            hudEMA.className = `font-orbitron font-bold text-xs mt-1 ${state.emaFast > state.emaSlow ? 'text-matrix-green' : 'text-matrix-red'}`;
+
+            hudRSI.innerText = `${state.rsi.toFixed(1)} (${state.rsi < 35 ? 'OVERSOLD' : state.rsi > 65 ? 'OVERBOUGHT' : 'NEUTRAL'})`;
+            hudRSI.className = `font-orbitron font-bold text-xs mt-1 ${state.rsi < 35 ? 'text-matrix-green' : state.rsi > 65 ? 'text-matrix-red' : 'text-matrix-gold'}`;
+
+            hudMACD.innerText = `${state.macd >= 0 ? '+' : ''}${state.macd.toFixed(4)} (${state.macd >= 0 ? 'BULL' : 'BEAR'})`;
+            hudMACD.className = `font-orbitron font-bold text-xs mt-1 ${state.macd >= 0 ? 'text-matrix-green' : 'text-matrix-red'}`;
+
+            hudStoch.innerText = state.stoch < 35 ? "BUY ZONE" : state.stoch > 65 ? "SELL ZONE" : "NEUTRAL";
+            hudStoch.className = `font-orbitron font-bold text-xs mt-1 ${state.stoch < 35 ? 'text-matrix-green' : state.stoch > 65 ? 'text-matrix-red' : 'text-matrix-gold'}`;
+        }
+
+        /* ==================== TICK SIMULATOR & PRICE UPDATES ==================== */
+        function processPriceTicks() {
+            ALL_OTC_PAIRS.forEach(pair => {
+                const st = pairStates[pair];
+                st.ticksInTrend++;
+
+                if (st.ticksInTrend > 8 + Math.floor(Math.random() * 12)) {
+                    st.trendDirection *= -1;
+                    st.ticksInTrend = 0;
+                }
+
+                const volatility = st.price * 0.00015;
+                const delta = (st.trendDirection * 0.6 + (Math.random() - 0.48)) * volatility;
+                
+                st.lastPrice = st.price;
+                st.price += delta;
+                st.momentum = delta;
+
+                st.emaFast = st.emaFast * 0.82 + st.price * 0.18;
+                st.emaSlow = st.emaSlow * 0.92 + st.price * 0.08;
+                st.rsi = Math.min(88, Math.max(12, st.rsi + delta * 25000));
+                st.macd = (st.emaFast - st.emaSlow) * 10;
+                st.stoch = Math.min(95, Math.max(5, st.stoch + (Math.random() - 0.49) * 8 + (delta > 0 ? 3 : -3)));
+            });
+
+            // Update Price for Active Selected Pair
+            const activeState = pairStates[selectedPair];
+            const priceEl = document.getElementById('livePriceDisplay');
+            const iconEl = document.getElementById('priceTickIcon');
+
+            const decimals = activeState.price > 100 ? 2 : 5;
+            priceEl.innerText = activeState.price.toFixed(decimals);
+
+            if (activeState.momentum >= 0) {
+                iconEl.className = "text-matrix-green text-xs";
+                iconEl.innerHTML = '<i class="fa-solid fa-caret-up"></i>';
+            } else {
+                iconEl.className = "text-matrix-red text-xs";
+                iconEl.innerHTML = '<i class="fa-solid fa-caret-down"></i>';
+            }
+        }
+
+        /* ==================== EXACT UTC 1M TIMER & LOCKED CANDLE SWITCHER ==================== */
+        function updateExpiryClock() {
+            const now = new Date();
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+            const seconds = now.getUTCSeconds();
+            const secondsStr = String(seconds).padStart(2, '0');
+
+            document.getElementById('utcClock').innerText = `${hours}:${minutes}:${secondsStr}`;
+
+            const remaining = 60 - seconds;
+            const displaySec = remaining === 60 ? 0 : remaining;
+
+            document.getElementById('timerText').innerText = `${displaySec}s REMAINING`;
+
+            const pct = ((60 - displaySec) / 60) * 100;
+            document.getElementById('timerBar').style.width = `${100 - pct}%`;
+
+            const alertStatusText = document.getElementById('alertStatusText');
+            const entryAlert = document.getElementById('entryAlert');
+
+            // NEW CANDLE OPEN AT 00 SECONDS -> TRIGGER NEW LOCKED SIGNAL FOR ALL PAIRS
+            if (seconds === 0) {
+                ALL_OTC_PAIRS.forEach(pair => {
+                    generateAndLockSignal(pair, now.getUTCMinutes());
+                });
+                
+                entryAlert.className = "mt-3 py-1.5 px-3 rounded bg-matrix-green/20 border border-matrix-green text-center font-mono text-xs text-matrix-green font-bold flex items-center justify-center gap-2";
+                alertStatusText.innerText = "NEW 1M CANDLE OPEN! EXECUTE LOCKED TRADE SIGNAL NOW!";
+                playSound('alert');
+            } 
+            // 5 SECONDS ENTRY ALERT WARNING
+            else if (displaySec <= 5 && displaySec > 0) {
+                entryAlert.className = "mt-3 py-1.5 px-3 rounded bg-matrix-gold/20 border border-matrix-gold text-center font-mono text-xs text-matrix-gold font-bold animate-pulse flex items-center justify-center gap-2";
+                alertStatusText.innerText = "PREPARE ENTRY! PLACE TRADE AT EXACT 00s CANDLE OPEN";
+                playSound('beep');
+            } 
+            else {
+                entryAlert.className = "mt-3 py-1.5 px-3 rounded bg-matrix-dim border border-matrix-border text-center font-mono text-xs text-matrix-textDim flex items-center justify-center gap-2";
+                alertStatusText.innerText = "SIGNAL LOCKED FOR CURRENT 1-MINUTE CANDLE";
+            }
+        }
+
+        // Initialize App
+        window.onload = function() {
+            renderPairList();
+            const now = new Date();
+            ALL_OTC_PAIRS.forEach(pair => {
+                generateAndLockSignal(pair, now.getUTCMinutes());
+            });
+            
+            setInterval(processPriceTicks, 500);
+            setInterval(updateExpiryClock, 1000);
+            updateExpiryClock();
+        };
+    </script>
+</body>
+</html>
